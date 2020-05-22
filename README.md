@@ -83,7 +83,7 @@ Complex parameterized queries can also be built up and *embedded* in the final q
 
 ```typescript
 let filter = sql.embed`age >= ${age}`
-let order = sql.safe'name'
+let order = sql.safe('name')
 
 sql`select * from customers where ${filter} order by ${order}`) == {
   text: 'select * from customers where age >= $1 order by name',
@@ -112,7 +112,7 @@ typeof customers == {
 
 ### 6. Joined columns
 
-Tusk borrows the [Standalone Resultset Decomposition](https://massivejs.org/docs/joins-and-result-trees#standalone-resultset-decomposition) idea (and code) from the excellent [MassiveJS](https://massivejs.or) library.
+Tusk borrows the [Standalone Resultset Decomposition](https://massivejs.org/docs/joins-and-result-trees#standalone-resultset-decomposition) idea (and code) from the excellent [MassiveJS](https://massivejs.org) library.
 
 Column joins can be defined in a type safe way and internally generates a Massive decompose schema
 
