@@ -1,0 +1,45 @@
+{
+  "name": "pg-tusk",
+  "version": "1.0.0",
+  "description": "A tiny query tool for Postgres that embraces sql and typescript",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint '*/**/*.{js,ts}' --quiet --fix",
+    "build": "tsc",
+    "coverage": "jest --coverage=true"
+  },
+  "keywords": [
+    "postgres",
+    "pg",
+    "postgresql",
+    "sql",
+    "typescript",
+    "database",
+    "datamapper",
+    "data-mapper",
+    "dapper"
+  ],
+  "author": "ajai.shankar@gmail.com",
+  "license": "BSD-3-Clause",
+  "devDependencies": {
+    "@types/jest": "^25.2.1",
+    "@types/lodash": "^4.14.150",
+    "@types/pg": "^7.14.3",
+    "@typescript-eslint/eslint-plugin": "^2.33.0",
+    "@typescript-eslint/parser": "^2.33.0",
+    "eslint": "^6.0.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-prettier": "^3.1.3",
+    "jest": "^25.2.1",
+    "prettier": "^2.0.5",
+    "ts-jest": "^25.5.1",
+    "typescript": "^3.9.2"
+  },
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "murmurhash": "^1.0.0",
+    "pg": "^8.1.0"
+  }
+}
