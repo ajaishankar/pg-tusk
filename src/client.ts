@@ -3,9 +3,9 @@ import * as pg from 'pg'
 
 import { QueryConfig, FromQueryConfig, WhereQueryConfig } from './sql'
 import { Columns } from './columns'
-import { JoinColumns } from './join'
+import { JoinTable } from './join'
 
-import { ElementType } from './base'
+import { ElementType, TableBase } from './base'
 import { Table } from './table'
 
 export class Client {
@@ -16,11 +16,11 @@ export class Client {
   }
 
   async select<T extends object>(columns: Columns<T>, from: FromQueryConfig): Promise<T[]>
-  async select<T extends object>(joinColumns: JoinColumns<T>, from: FromQueryConfig): Promise<ElementType<T>[]>
+  async select<T extends object>(joinTable: JoinTable<T>, where: WhereQueryConfig): Promise<ElementType<T>[]>
   async select<T extends object>(table: Table<T>, where: WhereQueryConfig): Promise<T[]>
   async select<T extends object>(table: Table<T>, subset: (keyof T)[], where: WhereQueryConfig): Promise<T[]>
   async select<T extends object>(
-    source: Columns<T> | JoinColumns<T> | Table<T>,
+    source: Columns<T> | JoinTable<T> | Table<T>,
     subsetOrQuery: FromQueryConfig | WhereQueryConfig | (keyof T)[],
     query?: FromQueryConfig | WhereQueryConfig,
   ) {
@@ -29,17 +29,19 @@ export class Client {
     let columns =
       subsetOrQuery instanceof Array
         ? subsetOrQuery.map(col => `"${col}"`).join(', ')
+        : source instanceof JoinTable
+        ? source.columns
         : source instanceof Table
         ? source.columns
         : source // columns
 
     let { text, values } = query != null ? query : ((subsetOrQuery as unknown) as QueryConfig)
 
-    text = source instanceof Table ? `select ${columns} from ${source} ${text}` : `select ${columns} ${text}`
+    text = source instanceof TableBase ? `select ${columns} from ${source} ${text}` : `select ${columns} ${text}`
 
     let result = await this.query<Row>({ text, values })
-    if (columns instanceof JoinColumns) {
-      result.rows = columns.decompose(result.rows)
+    if (source instanceof JoinTable) {
+      result.rows = source.decompose(result.rows)
     }
     return result.rows
   }

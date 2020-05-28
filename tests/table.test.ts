@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 import * as t from './tables'
 import { getTestDatabase } from './db'
-import { Client, where, table, ColumnTypes as C } from '../src'
+import { Client, where, table, ColumnTypes as C, sql } from '../src'
 
 const db = getTestDatabase()
 
@@ -17,6 +17,11 @@ describe('table tests', () => {
   it('should recognize table schema', () => {
     let tbl = table('catalog.products', { id: C.number, name: C.string })
     expect(tbl.toString()).toBe(`"catalog"."products"`)
+  })
+
+  it('should not be parameterized if embedded in custom sql', () => {
+    let query = sql`select ${t.products.columns} from ${t.products}`
+    expect(query.values.length).toBe(0)
   })
 
   it('can insert record', async () => {

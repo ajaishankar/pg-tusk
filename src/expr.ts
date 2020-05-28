@@ -1,3 +1,5 @@
+import { ExpandRecursively } from './base'
+
 export class Expr<_> {
   static readonly number = (expr: string) => new Expr<number>(expr)
   static readonly string = (expr: string) => new Expr<string>(expr)
@@ -12,3 +14,14 @@ export class Expr<_> {
 
   private constructor(private expr: string) {}
 }
+
+export type Computed<O extends object> = {
+  [K in keyof O]: O[K] extends Expr<infer _> ? O[K] : never
+}
+
+export type Extend<T, O extends object> = ExpandRecursively<
+  T &
+    {
+      [K in keyof O]: O[K] extends Expr<infer T> ? T : never
+    }
+>

@@ -3,30 +3,36 @@
 import { getTestDatabase } from './db'
 import * as t from './tables'
 import { Order } from './tables'
-import { Client, sql, from, join, JoinColumnsSchema, Expr } from '../src'
+import { Client, sql, from, Expr, where } from '../src'
 
 /**
  * https://massivejs.org/docs/joins-and-result-trees#standalone-resultset-decomposition
  */
-const customersWithOrders = join(t.customers.columns, {
+const customersWithOrders = t.customers.join({
   as: 'c',
-  pk: 'id',
-  orders: join(t.orders.columns.omit('customer_id'), {
+  pk: ['id'],
+  extend: {
+    adult: Expr.boolean('case when c.age >= 21 then true else false end'),
+  },
+  orders: t.orders.join({
     as: 'o',
-    pk: ['id'],
-    items: join(t.order_items.columns.omit('order_id', 'product_id'), {
+    pk: 'id',
+    on: 'o.customer_id = c.id',
+    omit: ['customer_id'],
+    items: t.order_items.join({
       as: 'i',
       pk: 'id',
-      product: join(t.products.columns, {
+      on: 'i.order_id = o.id',
+      omit: ['order_id', 'product_id'],
+      product: t.products.leftJoin({
         as: 'p',
         pk: 'id',
-        single: true, // product is an object, not array
+        on: 'i.product_id = p.id',
+        single: true,
       }),
     }),
   }),
 })
-
-type CustomerWithOrders = JoinColumnsSchema<typeof customersWithOrders>
 
 const db = getTestDatabase()
 
@@ -96,19 +102,7 @@ describe('client tests', () => {
   })
 
   it('can select joined columns', async () => {
-    // ensure compatible type
-    let customers: CustomerWithOrders[] = await client.select(
-      customersWithOrders,
-      from`
-        customers c
-        join orders o
-          on o.customer_id = c.id
-        join order_items i
-          on i.order_id = o.id
-        join products p
-          on i.product_id = p.id
-        order by o.id, i.id`,
-    )
+    let customers = await client.select(customersWithOrders, where`c.id > 0`)
 
     expect(customers.length).toBe(1)
 
@@ -121,6 +115,7 @@ describe('client tests', () => {
       id: id,
       name: 'john doe',
       age: 30,
+      adult: true,
       orders: [
         {
           id: id,

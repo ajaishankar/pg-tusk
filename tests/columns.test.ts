@@ -14,7 +14,7 @@ describe('columns tests', () => {
   })
 
   it('column alias', () => {
-    expect(columns.as('c').toString()).toEqual('c."id" as "c_id", c."name" as "c_name", c."age" as "c_age"')
+    expect(columns.forSelect('c')).toEqual('c."id" as "c_id", c."name" as "c_name", c."age" as "c_age"')
   })
 
   it('pick columns', () => {
@@ -33,12 +33,10 @@ describe('columns tests', () => {
   })
 
   it('computed columns aliased', () => {
-    let computed = columns
-      .extend({
-        adult: Expr.boolean('c.age >= 21 then true else false end'),
-      })
-      .as('c')
-    expect(computed.toString()).toEqual(
+    let computed = columns.extend({
+      adult: Expr.boolean('c.age >= 21 then true else false end'),
+    })
+    expect(computed.forSelect('c')).toEqual(
       'c."id" as "c_id", c."name" as "c_name", c."age" as "c_age", c.age >= 21 then true else false end as "c_adult"',
     )
   })
