@@ -8,17 +8,6 @@ Its only purpose in life is to *strongly type* queries and stay out of the way o
 
 Think of it as [Dapper](https://github.com/StackExchange/Dapper) for Typescript!
 
-```typescript
-let customers = await client.select(columns, from`customers where id = ${id}`)
-
-let customersWithOrders = await client.select(
-    joinedColumns,
-    from`customers c join order o on ... where c.id = ${id}`
-)
-```
-
-<img src="https://user-images.githubusercontent.com/328008/82714379-eb2c7780-9c53-11ea-8a42-e5de84491ba2.png" height="200px" width="100%">
-
 ## Usage
 
 ### 1. Map a database table to a Typescript type
@@ -37,35 +26,49 @@ export const customers = table('customers', {
 export type Customer = TableSchema<typeof customers>
 ```
 
-### 2. Defining a table is worth it
+### 2. Insert, update and delete data in a table
 
 ```typescript
 import * as t from './tables'
 
-let customer = await t.customers.insert(client, { name: 'john doe', age: 41 })
-let updated  = await t.customers.update(client, { age: 42 }, where`id = ${customer.id}`)
-let deleted  = await t.customers.delete(client, where`id = ${customer.id}`)
+let customer = await client.insert(t.customers, { name: 'john doe', age: 41 })
+let updated  = await client.update(t.customers, { age: 42 }, where`id = ${customer.id}`)
+let deleted  = await client.delete(t.customers,              where`id = ${customer.id}`)
 ```
 
 ### 3. Grab a connection and run queries (maybe inside a transaction)
+
+A Tusk client is a simple wrapper over a `pg.PoolClient` allowing inserts, updates, deletes and typed selects
 
 ```typescript
 import { Database } from 'pg-tusk'
 import * as t from './tables'
 
-const db = new Database({ connectionString }) // pg.PoolOptions
+const db = new Database({ connectionString }) // pg.PoolConfig
 
 await db.withTask(async client => {
   await client.withTransaction(async () => {
-    let customers = await t.customers.find(client, where`age >= 21`)
-    await client.query(...)
+    let customers = await client.select(t.customers, where`age >= 21`)
+    await client.query(...) // an arbitrary query
   })
 }
 ```
 
+Select from a table *where*...
+
+```typescript
+let customers = await client.select(t.customers, where`age >= 21`)
+```
+
+Or select columns *from* a table where...
+
+```typescript
+let customers = await client.select(columns, from`customers where age >= 21`)
+```
+
 ### 4. Tagged template literals (sql, from, where)
 
-Tusk is all about *parameterized* SQL that gets passed to the insanely simple [Postgres Client](https://node-postgres.com/features/queries) as a QueryConfig
+Tusk is all about *parameterized* SQL that gets passed to the insanely simple [Postgres Client](https://node-postgres.com/features/queries) as a `pg.QueryConfig`
 
 ```typescript
 import * as t from './tables'
@@ -82,10 +85,10 @@ sql`select ${columns} from customers where age >= ${age}` == {
 Complex parameterized queries can also be built up and *embedded* in the final query
 
 ```typescript
-let filter = sql.embed`age >= ${age}`
-let order = sql.safe('name')
+let filter  = sql.embed`age >= ${age}` // embedded (parameterized)
+let orderBy = sql.safe`order by name`  // sql.safe (not parameterized)
 
-sql`select * from customers where ${filter} order by ${order}`) == {
+sql`select * from customers where ${filter} ${orderBy}`) == {
   text: 'select * from customers where age >= $1 order by name',
   values: [age],
 }
@@ -100,7 +103,7 @@ let columns = t.customers.columns.extend({
   adult: Expr.boolean('case when age >= 21 then true else false end'),
 })
 
-let customers = await client.select(columns, from`customers`)
+let customers = await client.select(columns, from`customers where age >= 21`)
 
 typeof customers == {
   id: number
@@ -114,71 +117,84 @@ typeof customers == {
 
 Tusk borrows the [Standalone Resultset Decomposition](https://massivejs.org/docs/joins-and-result-trees#standalone-resultset-decomposition) idea (and code) from the excellent [MassiveJS](https://massivejs.org) library.
 
-Column joins can be defined in a type safe way and internally generates a Massive decompose schema
+Table joins can be defined in a type safe way and internally generates a Massive decompose schema
 
 ```typescript
 import { join } from 'pg-tusk'
 
-// declare column joins at module level
-const customersWithOrders = join(t.customers.columns, {
+// join customers, orders, order items and products - batteries included!
+const customersWithOrders = t.customers.join({
   as: 'c',
-  pk: 'id',
-  orders: join(t.orders.columns.omit('customer_id'), {
+  pk: 'id',                                 // specify pk as in MassiveJS
+  extend: {                                 // extend customer with a computed column
+    adult: Expr.boolean('case when c.age >= 21 then true else false end'),
+  },
+  orders: t.orders.join({
     as: 'o',
     pk: ['id'],
-    items: join(t.order_items.columns.omit('order_id', 'product_id'), {
+    on: 'o.customer_id = c.id',
+    omit: ['customer_id'],                  // omit customer_id from orders
+    items: t.order_items.join({
       as: 'i',
       pk: 'id',
-      product: join(t.products.columns, {
+      on: 'i.order_id = o.id',
+      omit: ['order_id', 'product_id'],
+      product: t.products.leftJoin({        // MassiveJS supports inner and left joins only
         as: 'p',
         pk: 'id',
-        single: true, // product is an object, not array
+        on: 'i.product_id = p.id',
+        single: true,                       // product is an object, not array
       }),
     }),
   }),
 })
 
-type CustomerWithOrders = JoinColumnsSchema<typeof customersWithOrders>  
+type CustomerWithOrders = JoinTableSchema<typeof customersWithOrders>  
 ```
 
-Because of some Typescript magic, the above definition results in the following type
+Select the data as usual and decompose to nested relations
 
 ```typescript
-let customers = await client.select(
-    customersWithOrders,
-    from`customers c join order o on ... where c.id = ${id}`
-)
-
-type CustomerWithOrders = {
-    id: number;
-    name: string;
-    age: number;
-    orders: {
-        id: number;
-        date: Date;
-        status: t.OrderStatus;
-        total: number;
-        items: {
-            id: number;
-            total: number;
-            price: number;
-            quantity: number;
-            product: {
-                id: number;
-                name: string;
-            };
-        }[];
-    }[];
-}
+let customers = await client.select(customersWithOrders, where`c.id = ${id}`)
 ```
 
-### 7. Unit Testing
+<img src="https://user-images.githubusercontent.com/328008/83204104-9cc61f80-a110-11ea-9dc6-2223178bfe28.png" width="100%" height="200px">
+
+Thanks to some Typescript magic, the above definition automatically results in the following type!
+
+```typescript
+type CustomerWithOrders = {
+  id: number
+  name: string
+  age: number
+  adult: boolean
+  orders: {
+    id: number
+    date: Date
+    status: t.OrderStatus
+    total: number
+    items: {
+      id: number
+      total: number
+      price: number
+      quantity: number
+      product: {
+        id: number
+        name: string
+      }
+    }[]
+  }[]
+}
+
+```
+
+### 7. [Unit Testing](./tests)
 
 Tusk makes it a breeze to unit test your database queries!
 
 Included is a `TestDatabase` that begins a transaction for each test which gets rolled back at the end.
 
-A sample Jest integration is as simple as this, please refer to the examples in the `tests` folder.
+A sample Jest integration is as simple as this
 
 ```typescript
 export function getTestDatabase() {
