@@ -39,16 +39,16 @@ describe('client tests', () => {
   beforeEach(async () => {
     client = await db.getClient()
 
-    let [product1, product2] = await t.products.insert(client, [{ name: 'product 1' }, { name: 'product 2' }])
+    let [product1, product2] = await client.insert(t.products, [{ name: 'product 1' }, { name: 'product 2' }])
 
-    let customer = await t.customers.insert(client, { name: 'john doe', age: 30 })
+    let customer = await client.insert(t.customers, { name: 'john doe', age: 30 })
 
-    let [order1, order2] = await t.orders.insert(client, [
+    let [order1, order2] = await client.insert(t.orders, [
       { customer_id: customer.id, date: date1, status: 'shipped', total: 42 },
       { customer_id: customer.id, date: date2, status: 'ordered', total: 20 },
     ])
 
-    await t.order_items.insert(client, [
+    await client.insert(t.order_items, [
       { order_id: order1.id, product_id: product1.id, price: 11, quantity: 2, total: 22 },
       { order_id: order1.id, product_id: product2.id, price: 20, quantity: 1, total: 20 },
       { order_id: order2.id, product_id: product2.id, price: 20, quantity: 1, total: 20 },
@@ -77,15 +77,6 @@ describe('client tests', () => {
       return await client.query(sql`update orders set status = ${newStatus} where status = ${oldStatus}`)
     })
     expect(result.rowCount).toBe(1)
-  })
-
-  it('can select columns specified in sql', async () => {
-    let orders = await client.select(
-      t.orders.columns,
-      sql`select ${t.orders.columns} from orders where date = ${date2}`,
-    )
-    expect(orders.length).toBe(1)
-    expect(orders[0]).toMatchObject({ date: date2, status: 'ordered', total: 20 })
   })
 
   it('can select columns from', async () => {

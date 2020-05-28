@@ -7,7 +7,7 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint '*/**/*.{js,ts}' --quiet --fix",
-    "build": "tsc",
+    "build": "tsc -p tsconfig-build.json",
     "coverage": "jest --coverage=true"
   },
   "keywords": [

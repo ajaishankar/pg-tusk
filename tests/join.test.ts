@@ -30,7 +30,7 @@ describe('join tests', () => {
    * https://massivejs.org/docs/joins-and-result-trees#standalone-resultset-decomposition
    */
   it('should build schema for massivejs decompose', () => {
-    expect(customersWithOrders.decomposeSchema).toEqual({
+    expect(customersWithOrders.schema).toEqual({
       pk: ['c_id'],
       columns: {
         c_id: 'id',

@@ -3,6 +3,8 @@ import * as _ from 'lodash'
 import { Columns } from './columns'
 import { ColumnsBase, ElementType, ExpandRecursively } from './base'
 
+import * as decompose from './massive/util/decompose'
+
 type Join<T> = {
   as: string
   pk: keyof T | (keyof T)[]
@@ -32,9 +34,13 @@ type DecomposeSchema = {
   [nested: string]: DecomposeSchema | any
 }
 
-export class JoinColumns<_T = any> extends ColumnsBase {
-  constructor(readonly decomposeSchema: DecomposeSchema, private columns: string) {
+export class JoinColumns<T = any> extends ColumnsBase {
+  constructor(readonly schema: DecomposeSchema, private columns: string) {
     super()
+  }
+
+  decompose(rows: any[]) {
+    return decompose(this.schema as any, rows) as ElementType<T>[]
   }
 
   toString() {
@@ -64,7 +70,7 @@ export function join<T extends object, O extends Join<T>>(columns: Columns<T>, o
 
   let nested = {
     selects: _.values(joins).map(col => col.toString()),
-    decompose: _.mapValues(joins, (col: JoinColumns) => col.decomposeSchema),
+    decompose: _.mapValues(joins, (col: JoinColumns) => col.schema),
   }
 
   let select = [columns.toString(), ...nested.selects].join(', ')
