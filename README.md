@@ -113,7 +113,7 @@ typeof customers == {
 }[]
 ```
 
-### 6. Joined columns
+### 6. Table joins
 
 Tusk borrows the [Standalone Resultset Decomposition](https://massivejs.org/docs/joins-and-result-trees#standalone-resultset-decomposition) idea (and code) from the excellent [MassiveJS](https://massivejs.org) library.
 
