@@ -120,8 +120,6 @@ Tusk borrows the [Standalone Resultset Decomposition](https://massivejs.org/docs
 Table joins can be defined in a type safe way and internally generates a Massive decompose schema
 
 ```typescript
-import { join } from 'pg-tusk'
-
 // join customers, orders, order items and products - batteries included!
 const customersWithOrders = t.customers.join({
   as: 'c',
