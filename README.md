@@ -85,8 +85,8 @@ sql`select ${columns} from customers where age >= ${age}` == {
 Complex parameterized queries can also be built up and *embedded* in the final query
 
 ```typescript
-let filter  = sql.embed`age >= ${age}` // embedded (parameterized)
-let orderBy = sql.safe`order by name`  // sql.safe (not parameterized)
+let filter  = sql.embed`age >= ${age}`   // (parameterized)
+let orderBy = sql.unsafe`order by name`  // (not parameterized - you know what you're doing)
 
 sql`select * from customers where ${filter} ${orderBy}`) == {
   text: 'select * from customers where age >= $1 order by name',

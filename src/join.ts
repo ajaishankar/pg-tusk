@@ -4,7 +4,7 @@ import { ElementType, ExpandRecursively, TableBase } from './base'
 import { Columns } from './columns'
 
 import * as decompose from './massive/util/decompose'
-import { SqlSafeString } from './sql'
+import { SqlUnsafeString } from './sql'
 import { Computed, Extend } from './expr'
 
 export type Join<T, X extends object> = {
@@ -48,7 +48,7 @@ type DecomposeSchema = {
 }
 
 export class JoinTable<R = any> extends TableBase {
-  private constructor(readonly schema: DecomposeSchema, readonly columns: SqlSafeString, private joinClause: string) {
+  private constructor(readonly schema: DecomposeSchema, readonly columns: SqlUnsafeString, private joinClause: string) {
     super()
   }
 
@@ -101,7 +101,7 @@ export class JoinTable<R = any> extends TableBase {
       ...nested.schema,
     }
 
-    return new JoinTable<JoinResult<T, O>>(schema, new SqlSafeString(joinColumns), joinClause)
+    return new JoinTable<JoinResult<T, O>>(schema, new SqlUnsafeString(joinColumns), joinClause)
   }
 }
 

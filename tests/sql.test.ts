@@ -19,8 +19,8 @@ describe('sql template literals', () => {
     })
   })
 
-  it('should not parameterize sql safe string', () => {
-    let limit = sql.safe('limit 10')
+  it('should not parameterize sql unsafe string', () => {
+    let limit = sql.unsafe`limit 10`
     expect(sql`select * from customers where age > ${age} order by name ${limit}`).toEqual({
       text: 'select * from customers where age > $1 order by name limit 10',
       values: [age],

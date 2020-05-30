@@ -9,7 +9,7 @@ export type WhereQueryConfig = { type: 'where'; text: string; values: any[] }
 
 export type FromQueryConfig = { type: 'from'; text: string; values: any[] }
 
-export class SqlSafeString {
+export class SqlUnsafeString {
   constructor(readonly value: string) {}
   toString() {
     return this.value
@@ -30,7 +30,7 @@ function interpolate(literals: TemplateStringsArray, params: any[], indexes: Map
     if (
       param instanceof ColumnsBase ||
       param instanceof TableBase ||
-      param instanceof SqlSafeString ||
+      param instanceof SqlUnsafeString ||
       param instanceof Expr
     ) {
       text += param.toString()
@@ -71,7 +71,7 @@ export function from(literals: TemplateStringsArray, ...params: any[]): FromQuer
 
 sql.embed = (literals: TemplateStringsArray, ...params: any[]) => new EmbeddedSql(literals, params)
 
-sql.safe = (value: any) => new SqlSafeString(String(value))
+sql.unsafe = (value: any) => new SqlUnsafeString(String(value))
 
 sql.from = from
 
