@@ -71,7 +71,15 @@ export function from(literals: TemplateStringsArray, ...params: any[]): FromQuer
 
 sql.embed = (literals: TemplateStringsArray, ...params: any[]) => new EmbeddedSql(literals, params)
 
-sql.unsafe = (value: any) => new SqlUnsafeString(String(value))
+sql.unsafe = (literals: TemplateStringsArray, ...params: any[]) => {
+  let text = ''
+  for (let i = 0; i < params.length; i++) {
+    text += literals[i]
+    text += params[i]
+  }
+  text += literals[literals.length - 1]
+  return new SqlUnsafeString(text)
+}
 
 sql.from = from
 

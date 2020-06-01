@@ -86,10 +86,10 @@ Complex parameterized queries can also be built up and *embedded* in the final q
 
 ```typescript
 let filter  = sql.embed`age >= ${age}`   // (parameterized)
-let orderBy = sql.unsafe`order by name`  // (not parameterized - you know what you're doing)
+let limit = sql.unsafe`limit ${10}`      // (not parameterized - you know what you're doing)
 
-sql`select * from customers where ${filter} ${orderBy}`) == {
-  text: 'select * from customers where age >= $1 order by name',
+sql`select * from customers where ${filter} order by name ${limit}`) == {
+  text: 'select * from customers where age >= $1 order by name limit 10',
   values: [age],
 }
 ```
